@@ -45,4 +45,5 @@ ro.surface_flinger.set_touch_timer_ms=200
 # Sensors
 persist.log.tag.sensors-hal=S
 persist.log.tag."LOGTAG"=S
+persist.vendor.sensors.debug.hal=0
 
