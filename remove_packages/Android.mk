@@ -8,16 +8,15 @@ LOCAL_OVERRIDES_PACKAGES := Accord \
 	AndroidAutoStub \
 	CalendarGoogle \
 	Drive \
-	FilesGoogle \
 	Gmail2 \
 	GoogleContacts \
 	GoogleDialer \
-	LatinImeGoogle \
 	Maps \
 	Messages \
 	PersonalSafety \
 	Photos \
 	RecorderPrebuilt \
+	WeatherPixelPrebuilt_24D1 \
 	Velvet \
 	YouTube
 
