@@ -43,40 +43,46 @@ apply_recovery_patch() {
     # Fix line endings and move to target dir
     cd "$target_dir" || return 1
     tr -d '\r' < "$patch_path" > /tmp/atomic-recovery.patch
+
+    commit_message="Import graphics_drm fix from QSSI 13"
+    output=$(git log --all --grep="$commit_message")
     
     # Try different patch methods
-    if git am --3way /tmp/atomic-recovery.patch 2>/dev/null; then
-        echo "Patch applied successfully."
-    elif git apply --check --ignore-whitespace /tmp/atomic-recovery.patch 2>/dev/null && 
-          git apply --ignore-whitespace /tmp/atomic-recovery.patch; then
-        git add .
-        git commit -m "Applied recovery patch" -q
-        echo "Patch applied successfully."
+    if [ -n "$output" ]; then
+        echo "Patch already applied."
     else
-        # Try standard patch with different strip levels
-        for level in 1 0 2; do
-            if patch -p${level} --ignore-whitespace --no-backup-if-mismatch < /tmp/atomic-recovery.patch 2>/dev/null; then
-                git add .
-                git commit -m "Applied recovery patch" -q
-                echo "Patch applied successfully."
-                rm /tmp/atomic-recovery.patch
-                cd "$root_dir"
-                return 0
-            fi
-        done
-        
-        # Last resort: try partial application
-        patch -p1 --forward --ignore-whitespace --no-backup-if-mismatch < /tmp/atomic-recovery.patch >/dev/null 2>&1 || true
-        if git diff --name-only | grep -q .; then
+        if git am --3way /tmp/atomic-recovery.patch 2>/dev/null; then
+            echo "Patch applied successfully."
+        elif git apply --check --ignore-whitespace /tmp/atomic-recovery.patch 2>/dev/null && 
+              git apply --ignore-whitespace /tmp/atomic-recovery.patch; then
             git add .
-            git commit -m "Applied recovery patch (partial)" -q
-            echo "Patch partially applied."
+            git commit -m "Applied recovery patch" -q
+            echo "Patch applied successfully."
         else
-            echo "Failed to apply patch."
-            git reset --hard HEAD >/dev/null 2>&1
+            # Try standard patch with different strip levels
+            for level in 1 0 2; do
+                if patch -p${level} --ignore-whitespace --no-backup-if-mismatch < /tmp/atomic-recovery.patch 2>/dev/null; then
+                    git add .
+                    git commit -m "Applied recovery patch" -q
+                    echo "Patch applied successfully."
+                    rm /tmp/atomic-recovery.patch
+                    cd "$root_dir"
+                    return 0
+                fi
+            done
+
+            # Last resort: try partial application
+            patch -p1 --forward --ignore-whitespace --no-backup-if-mismatch < /tmp/atomic-recovery.patch >/dev/null 2>&1 || true
+            if git diff --name-only | grep -q .; then
+                git add .
+                git commit -m "Applied recovery patch (partial)" -q
+                echo "Patch partially applied."
+            else
+                echo "Failed to apply patch."
+                git reset --hard HEAD >/dev/null 2>&1
+            fi
         fi
     fi
-    
     rm /tmp/atomic-recovery.patch
     cd "$root_dir"
 }
