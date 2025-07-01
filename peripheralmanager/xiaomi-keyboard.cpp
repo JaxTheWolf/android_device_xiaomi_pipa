@@ -110,7 +110,7 @@ void load_angle_detection_preference() {
     int c = fgetc(f);
     pthread_mutex_lock(&angle_detection_mutex);
     angle_detection_enabled = (c == '1');
-    pthread_mutex_lock(&angle_detection_mutex);
+    pthread_mutex_unlock(&angle_detection_mutex);
     fclose(f);
     LOGI("Angle detection preference loaded: %s",
          angle_detection_enabled ? "enabled" : "disabled");
@@ -157,8 +157,7 @@ void* accelerometer_thread(void* args) {
   sensorQueue =
       ASensorManager_createEventQueue(sensorManager, looper, 0, NULL, NULL);
   ASensorEventQueue_enableSensor(sensorQueue, accelerometer);
-  ASensorEventQueue_setEventRate(sensorQueue, accelerometer,
-                                 ASensor_getMinDelay(accelerometer));
+  ASensorEventQueue_setEventRate(sensorQueue, accelerometer, 500000);
 
   while (!terminate) {
     ALooper_pollOnce(500, NULL, NULL, NULL);
