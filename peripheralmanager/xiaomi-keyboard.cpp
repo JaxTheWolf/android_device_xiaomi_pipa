@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <time.h>  // Add for time functions
 #include <unistd.h>
+
 const char kPackageName[] = "xiaomi-keyboard";
 
 /********************************************
@@ -102,9 +103,9 @@ pthread_t watchdog_thread;
 bool watchdog_enabled = true;
 
 // Angle detection enable flag
-bool angle_detection_enabled = false;  // Default value
+bool angle_detection_enabled = true;  // Default value, for now
 
-void load_angle_detection_preference() {
+/*void load_angle_detection_preference() {
   FILE* f = fopen("/data/misc/xiaomi_keyboard.conf", "r");
   if (f) {
     int c = fgetc(f);
@@ -116,9 +117,11 @@ void load_angle_detection_preference() {
          angle_detection_enabled ? "enabled" : "disabled");
   } else {
     LOGW(
-        "Could not open /data/misc/xiaomi_keyboard.conf, using default "
-        "(enabled)");
-    // angle_detection_enabled = true;
+        "Could not open data/misc/xiaomi_keyboard.conf, using default "
+        "(disabled)");
+    pthread_mutex_lock(&angle_detection_mutex);
+    angle_detection_enabled = false;
+    pthread_mutex_unlock(&angle_detection_mutex);
   }
 }
 
@@ -128,7 +131,7 @@ void* preference_watcher_thread(void*) {
     sleep(10);  // Reload every 10 seconds
   }
   return NULL;
-}
+}*/
 
 // Globals
 static ASensorManager* sensorManager = NULL;
@@ -508,7 +511,7 @@ void handle_lock_event(char* buffer) {
 
 float calculateAngle(float kX, float kY, float kZ, float padX, float padY,
                      float padZ) {
-  float32x4_t a = {kX, kY, kZ, 0.0f};
+  float32x4_t a = {-kX, -kY, kZ, 0.0f};
   float32x4_t b = {padX, padY, padZ, 0.0f};
 
   // Dot product
@@ -531,8 +534,12 @@ float calculateAngle(float kX, float kY, float kZ, float padX, float padY,
   if (norm_a == 0.0f || norm_b == 0.0f) return 0.0f;
 
   float cos_theta = dot / (norm_a * norm_b);
+  cos_theta = fmaxf(-1.0f, fminf(1.0f, cos_theta));
   float angle = fast_acosf(cos_theta) * (180.0f / M_PI);
 
+  LOGI("angle calculation: dot=%.2f, norm_a=%.2f, norm_b=%.2f, "
+       "cos_theta=%.2f, angle=%.2f",
+       dot, norm_a, norm_b, cos_theta, angle);
   return angle;
 }
 
@@ -582,7 +589,7 @@ void handle_accel_event(char* buffer) {
 
   float delta = dx * dx + dy * dy + dz * dz;
 
-  if (delta > vector_threshold) {
+  if (delta >= vector_threshold) {
     float angle = calculateAngle(local_kbX, local_kbY, local_kbZ, local_padX,
                                  local_padY, local_padZ);
     set_kb_state(!(angle >= 120), false);
@@ -615,7 +622,7 @@ void handle_event(char* buffer, ssize_t bytes_read) {
   } else if (buffer[4] == MSG_TYPE_LOCK || buffer[4] == MSG_TYPE_UNLOCK) {
     handle_lock_event(buffer);
   } else if (buffer[4] == MSG_TYPE_MOVEMENT && angle_detection_enabled_local) {
-    LOGI("angle_detection_enabled: %d", angle_detection_enabled_local);
+    // LOGI("angle_detection_enabled: %d", angle_detection_enabled_local);
     handle_accel_event(buffer);
   }
 }
@@ -716,7 +723,7 @@ int main() {
   LOGI("Xiaomi keyboard service v%s starting at %s", VERSION_STRING, time_str);
 
   // Load angle detection preference
-  load_angle_detection_preference();
+  // load_angle_detection_preference();
 
   ssize_t bytes_read;
   char buffer[BUFFER_SIZE];
@@ -799,9 +806,9 @@ int main() {
   pthread_detach(sensor_thread);
 
   // Create the preference watching thread
-  pthread_t preference_thread;
-  pthread_create(&preference_thread, NULL, preference_watcher_thread, NULL);
-  pthread_detach(preference_thread);
+  // pthread_t preference_thread;
+  // pthread_create(&preference_thread, NULL, preference_watcher_thread, NULL);
+  // pthread_detach(preference_thread);
 
   // Set up signal handling
   signal(SIGINT, signal_handler);

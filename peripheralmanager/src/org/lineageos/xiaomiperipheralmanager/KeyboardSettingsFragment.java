@@ -37,16 +37,16 @@ public class KeyboardSettingsFragment extends PreferenceFragment implements
     private SharedPreferences mKeyboardPreference;
 
     private void saveAngleDetectionPreference(boolean enabled) {
-    try {
-        File file = new File(CONF_LOCATION);
-        FileOutputStream fos = new FileOutputStream(file);
-        fos.write((enabled ? "1" : "0").getBytes());
-        fos.close();
-        logInfo("Angle detection preference saved: " + enabled);
-    } catch (IOException e) {
-        logError("Failed to save angle detection preference: " + e.getMessage());
+        try {
+            File file = new File(CONF_LOCATION);
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write((enabled ? "1" : "0").getBytes());
+            fos.close();
+            logInfo("Angle detection preference saved: " + enabled);
+        } catch (IOException e) {
+            logError("Failed to save angle detection preference: " + e.getMessage());
+        }
     }
-}
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
