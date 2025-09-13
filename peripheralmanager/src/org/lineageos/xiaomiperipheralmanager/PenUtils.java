@@ -31,7 +31,6 @@ public class PenUtils {
     // Xiaomi pen identifiers
     private static final int PEN_VENDOR_ID = 6421;
     private static final int PEN_PRODUCT_ID = 19841;
-
     private static InputManager mInputManager;
     private static SharedPreferences mPreferences;
     private static final String STYLUS_KEY = "stylus_switch_key";
@@ -131,7 +130,13 @@ public class PenUtils {
         @Override
         public void onInputDeviceAdded(int id) {
             logDebug("Input device added: " + id);
-            refreshPenMode();
+            InputDevice d = mInputManager.getInputDevice(id);
+            String name = d.getName();
+            logDebug("Device name: " + d.getName());
+
+            if (name.contains("Xiaomi Smart Pen")) {
+                refreshPenMode();
+            } 
         }
         
         @Override
@@ -142,8 +147,14 @@ public class PenUtils {
         
         @Override
         public void onInputDeviceChanged(int id) {
-            logDebug("Input device changed: " + id);
-            refreshPenMode();
+            logDebug("Input device added: " + id);
+            InputDevice d = mInputManager.getInputDevice(id);
+            String name = d.getName();
+            logInfo("Device name: " + d.getName());
+
+            if (name.contains("Xiaomi Smart Pen")) {
+                refreshPenMode();
+            }
         }
     };
     
